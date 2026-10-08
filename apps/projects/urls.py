@@ -14,6 +14,7 @@ from .views import (
 router = DefaultRouter()
 router.include_root_view = False
 router.register(r'jobs', ProjectJobMasterViewSet, basename='project-job')
+router.register(r'', ProjectJobMasterViewSet, basename='project')
 router.register(r'planning-stages', ProjectPlanningStageViewSet, basename='planning-stage')
 router.register(r'tasks', ProjectTaskViewSet, basename='task')
 router.register(r'assignments', DepartmentAssignmentViewSet, basename='assignment')

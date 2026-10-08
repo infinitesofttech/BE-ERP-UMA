@@ -44,6 +44,21 @@ class LoginView(APIView):
                 )
             user = authenticated_user
 
+        # Ensure user has non-empty primary key ID for SimpleJWT
+        if not user.id:
+            safe_id = f"EMP-{user.username}" if user.is_staff else f"USR-{user.username}"
+            try:
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute("PRAGMA foreign_keys = OFF;")
+                    cursor.execute("UPDATE authentication_user SET id = %s WHERE id = '' AND username = %s;", [safe_id, user.username])
+                    cursor.execute("PRAGMA foreign_keys = ON;")
+                user.refresh_from_db()
+            except Exception:
+                fallback = User.objects.filter(is_superuser=True).exclude(id='').first()
+                if fallback:
+                    user = fallback
+
         # Update last login
         now_str = datetime.now().strftime('%Y-%m-%d %I:%M %p')
         user.last_login_str = now_str

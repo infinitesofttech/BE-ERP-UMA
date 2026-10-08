@@ -80,13 +80,22 @@ class ProjectJobMasterViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-        if not data.get('id') or not data.get('project_number') and not data.get('projectNumber'):
+        if not data.get('id') and not data.get('project_number') and not data.get('projectNumber'):
             num_setting = NumberingSetting.objects.filter(doc_type='project').first()
-            p_code = num_setting.generate_next_number(increment=True) if num_setting else f"PRJ-2026-{ProjectJobMaster.objects.count() + 1:04d}"
+            if num_setting:
+                p_code = num_setting.generate_next_number(increment=True)
+            else:
+                next_num = ProjectJobMaster.objects.count() + 1
+                p_code = f"PRJ-2026-{next_num:04d}"
+                while ProjectJobMaster.objects.filter(id=p_code).exists():
+                    next_num += 1
+                    p_code = f"PRJ-2026-{next_num:04d}"
             j_code = p_code.replace('PRJ-', 'JOB-')
             data['id'] = p_code
             data['project_number'] = p_code
             data['job_number'] = j_code
+        elif not data.get('id'):
+            data['id'] = data.get('project_number') or data.get('projectNumber')
         if not data.get('target_delivery_date') and not data.get('targetDeliveryDate'):
             data['target_delivery_date'] = data.get('deliveryDate') or data.get('delivery_date') or datetime.now().strftime('%Y-%m-%d')
         if not data.get('start_date') and not data.get('startDate'):
